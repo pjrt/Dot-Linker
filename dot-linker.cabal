@@ -2,7 +2,7 @@ name:                dot-linker
 version:             0.1.0.0
 synopsis:            Initial project template from stack
 description:         Please see README.md
-homepage:            https://github.com/pjrt/alias-matcher#readme
+homepage:            https://github.com/pjrt/Dot-Linker#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Pedro Rodriguez Tavarez
@@ -26,4 +26,4 @@ executable dot-linker
 
 source-repository head
   type:     git
-  location: https://github.com/pjrt/alias-matcher
+  location: https://github.com/pjrt/Dot-Linker
