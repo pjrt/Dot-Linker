@@ -19,12 +19,14 @@ library
   build-depends:       base
                      , attoparsec
                      , text
+                     , system-filepath
+  ghc-options:         -Wall
   default-language:    Haskell2010
 
 executable dot-linker
   hs-source-dirs:      app
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -O2
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:       base
                      , dot-linker
                      , turtle
@@ -32,6 +34,20 @@ executable dot-linker
                      , unix
                      , text
   default-language:    Haskell2010
+
+test-suite dot-linker-spec
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Test.hs
+  default-language: Haskell2010
+  ghc-options: -Wall
+  build-depends:
+     base
+   , dot-linker
+   , HUnit
+   , tasty
+   , tasty-hunit
+   , attoparsec
 
 source-repository head
   type:     git

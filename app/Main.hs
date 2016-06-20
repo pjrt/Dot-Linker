@@ -18,28 +18,27 @@ main = sh $ do
 
 
 matchAndLink :: FilePath -> Shell ()
-matchAndLink dot = do
+matchAndLink dotfile = do
     h <- home
-    let dotAsText = asText dot
-        targetM = M.lookup dotAsText (fileMaps h)
-    maybe (unmatchFile $ asText dot) matchedFile targetM
+    let dotfileAsText = asText dotfile
+        targetM = M.lookup dotfileAsText (fileMaps h)
+    maybe (unmatchFile $ asText dotfile) matchedFile targetM
   where
-    unmatchFile d = echo $ "No match found for dot " <> d <> ". Skipping..."
+    unmatchFile df = echo $ "No match found for dotfile " <> df <> ". Skipping..."
     matchedFile target = do
       targetExists <- testfile target
-      let targetAsText = asText target
       if targetExists
-        then echo $ asText dot <> " already exists. Skipping..."
+        then echo $ asText dotfile <> " already exists. Skipping..."
         else do
-          realdot <- realpath dot
-          echo $ "Linking " <> asText realdot <> " -> " <> asText target
-          sln realdot target
+          realdotfile <- realpath dotfile
+          echo $ "Linking " <> asText realdotfile <> " -> " <> asText target
+          sln realdotfile target
 
     asText = either id id . toText
 
 
 fileMaps :: FilePath -> M.HashMap Text FilePath
-fileMaps home =
+fileMaps h =
   M.fromList
     [ ("ctags",        onHome ".ctags-2")
     , ("gitconfig",    onHome ".gitconfig")
@@ -51,7 +50,7 @@ fileMaps home =
     , ("zshrc",        onHome ".zshrc")
     ]
   where
-    onHome f = home <> f
+    onHome = (<>) h
 
 
 sln :: MonadIO io => FilePath -> FilePath -> io ()
