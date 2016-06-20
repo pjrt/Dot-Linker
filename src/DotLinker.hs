@@ -11,8 +11,8 @@ data Entry = Entry Text [FilePath]
   deriving (Eq, Show)
 
 -- | Parser for the map file.
-fileMapParser :: Parser Entry
-fileMapParser = do
+lineMapParser :: Parser Entry
+lineMapParser = do
     src <- word
     void $ char ':'
     skipMany space
@@ -24,3 +24,6 @@ fileMapParser = do
       strip $ decode <$> takeWhile (/= ',')
 
     strip str = many' space *> str <* many' space
+
+fileMapParser :: Parser [Entry]
+fileMapParser = many' $ lineMapParser <* endOfLine
