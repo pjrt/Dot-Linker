@@ -64,6 +64,7 @@ matchAndLink mapped dotfile = do
           echo $ "Linking " <> asText realdotfile <> " -> " <> asText target
           lns realdotfile target
 
+    -- TODO:pjrt this is lazy and probably wrong
     asText = either id id . toText
 
 
