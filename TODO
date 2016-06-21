@@ -3,3 +3,5 @@
    created
 * Make it transactional!
 ** Make the transactional ability optional
+* Extand env variables in mapping
+** allow the mapping file to map to `$HOME/.vimrc` or so
