@@ -67,7 +67,7 @@ matchAndLink mapped dotfile = do
     asText = either id id . toText
 
 
--- | Create a symboli link (ln -s)
+-- | Create a symbolic link (ln -s)
 lns :: MonadIO io => FilePath -> FilePath -> io ()
 lns src target = liftIO $ createSymbolicLink (toText' src) (toText' target)
   where toText' = unpack . either id id . toText
