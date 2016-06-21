@@ -1,8 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module DotLinker where
+module DotLinker
+( lineMapParser
+, fileMapParser
+, Entry(..)
+) where
 
+import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
-import Data.Functor (void)
 import Data.Text (Text, pack)
 import Filesystem.Path.CurrentOS (FilePath, decode)
 import Prelude hiding (takeWhile, FilePath)
@@ -13,17 +17,15 @@ data Entry = Entry Text [FilePath]
 -- | Parser for the map file.
 lineMapParser :: Parser Entry
 lineMapParser = do
-    src <- word
-    void $ char ':'
-    skipMany space
-    ts <- filePath `sepBy` char ','
+    src <- word <* char ':'
+    ts <- filePath `sepBy1` char ','
     return $ Entry (pack src) ts
   where
     word = many' letter_iso8859_15
     filePath =
-      strip $ decode <$> takeWhile (/= ',')
+      strip $ decode <$> takeTill (inClass ",\n\r")
 
     strip str = many' space *> str <* many' space
 
 fileMapParser :: Parser [Entry]
-fileMapParser = many' $ lineMapParser <* endOfLine
+fileMapParser = manyTill lineMapParser endOfInput

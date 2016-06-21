@@ -1,31 +1,45 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module Main(main) where
 
-import Data.Text (unpack)
+import Control.Monad (forM_)
+import Data.Attoparsec.ByteString (parseOnly)
+import Data.Text (unpack, pack)
+import Data.Text.Encoding (encodeUtf8)
+import DotLinker
 import Turtle
 import qualified Data.HashMap.Strict as M
 import Prelude hiding (FilePath)
 import System.Posix.Files (createSymbolicLink)
 
+type MappedDots = M.HashMap Text [FilePath]
+
 main :: IO ()
 main = sh $ do
-    dots <- options "Dot-Linker" parsePath
+    (dots, mapFileLoc) <- options "dot-linker" parseOpts
+    mapFile <- liftIO $ encodeUtf8 <$> readTextFile mapFileLoc
+    let entriesE = toHashMap <$> parseOnly fileMapParser mapFile
+    parsedMap <- either (die . pack) return entriesE
+    echo $ pack . show $ parsedMap
     cd dots
     file <- filename <$> ls "./"
-    matchAndLink file
+    matchAndLink parsedMap file
   where
-    parsePath = argPath "dots location" ""
+    parseOpts = (,) <$> parseDotsPath <*> parseMapPath
+    parseDotsPath = argPath "<dot-files location>" "Path to where the dot files are located"
+    parseMapPath = argPath "<parse-map location>" "Path to where the mapping file is located"
+
+    toHashMap = M.fromList . fmap toTups
+      where toTups (Entry k v) = (k, v)
 
 
-matchAndLink :: FilePath -> Shell ()
-matchAndLink dotfile = do
-    h <- home
+matchAndLink :: MonadIO io => MappedDots -> FilePath -> io ()
+matchAndLink mapped dotfile = do
     let dotfileAsText = asText dotfile
-        targetM = M.lookup dotfileAsText (fileMaps h)
-    maybe (unmatchFile $ asText dotfile) matchedFile targetM
+        targetM = M.lookup dotfileAsText mapped
+    maybe (unmatchFile $ asText dotfile) matchedFiles targetM
   where
     unmatchFile df = echo $ "No match found for dotfile " <> df <> ". Skipping..."
-    matchedFile target = do
+    matchedFiles targets = forM_ targets $ \target -> do
       targetExists <- testfile target
       if targetExists
         then echo $ asText dotfile <> " already exists. Skipping..."
@@ -35,22 +49,6 @@ matchAndLink dotfile = do
           sln realdotfile target
 
     asText = either id id . toText
-
-
-fileMaps :: FilePath -> M.HashMap Text FilePath
-fileMaps h =
-  M.fromList
-    [ ("ctags",        onHome ".ctags-2")
-    , ("gitconfig",    onHome ".gitconfig")
-    , ("git_template", onHome ".git_template")
-    , ("vimrc",        onHome ".vimrc")
-    , ("xmobarrc",     onHome ".xmobarrc")
-    , ("xmonad.hs",    onHome ".xmonad/xmonad.hs")
-    , ("Xdefaults",    onHome ".Xdefaults")
-    , ("zshrc",        onHome ".zshrc")
-    ]
-  where
-    onHome = (<>) h
 
 
 sln :: MonadIO io => FilePath -> FilePath -> io ()
