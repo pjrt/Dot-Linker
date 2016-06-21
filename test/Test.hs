@@ -19,8 +19,8 @@ tests = testGroup "file parser"
 lineparserTest :: TestTree
 lineparserTest =
   testCase "should parse a line fine" $
-    let x = parseOnly lineMapParser "vimrc:  /root/har/.vimrc, /root/har/.config/nvim/init.vim"
-        expected = Right $ Entry "vimrc" ["/root/har/.vimrc", "/root/har/.config/nvim/init.vim"]
+    let x = parseOnly lineMapParser "vim_rc:  /root/har/.vimrc, /root/har/.config/nvim/init.vim"
+        expected = Right $ Entry "vim_rc" ["/root/har/.vimrc", "/root/har/.config/nvim/init.vim"]
     in x @?= expected
 
 fileparserTest :: ByteString -> TestTree

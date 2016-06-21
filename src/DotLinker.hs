@@ -10,7 +10,8 @@ import Control.Applicative
 import Control.Monad (forM_)
 import Data.Attoparsec.ByteString.Char8
 import qualified Data.HashMap.Strict as M
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, unpack)
+import Data.Text.Encoding (decodeUtf8)
 import Filesystem.Path.CurrentOS (FilePath, decode)
 import System.Posix.Files (createSymbolicLink)
 import Prelude hiding (takeWhile, FilePath)
@@ -27,11 +28,11 @@ data Entry = Entry Text [FilePath]
 -- vimrc: /home/rar/.vimrc,/home/rar/.config/nvim/init.vim
 lineMapParser :: Parser Entry
 lineMapParser = do
-    src <- word <* char ':'
+    src <- dotName <* char ':'
     ts <- filePath `sepBy1` char ','
-    return $ Entry (pack src) ts
+    return $ Entry (decodeUtf8 src) ts
   where
-    word = many' letter_iso8859_15
+    dotName = takeTill (== ':')
     filePath =
       strip $ decode <$> takeTill (inClass ",\n\r")
 
@@ -56,7 +57,7 @@ matchAndLink mapped dotfile = do
   where
     unmatchFile df = echo $ "No match found for dotfile " <> df <> ". Skipping..."
     matchedFiles targets = forM_ targets $ \target -> do
-      targetExists <- testfile target
+      targetExists <- (||) <$> testfile target <*> testdir target
       if targetExists
         then echo $ asText dotfile <> " already exists. Skipping..."
         else do

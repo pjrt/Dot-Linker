@@ -15,7 +15,6 @@ main = sh $ do
     mapFile <- liftIO $ encodeUtf8 <$> readTextFile mapFileLoc
     let entriesE = toHashMap <$> parseOnly fileMapParser mapFile
     parsedMap <- either (die . pack) return entriesE
-    echo $ pack . show $ parsedMap
     cd dots
     file <- filename <$> ls "./"
     matchAndLink parsedMap file
