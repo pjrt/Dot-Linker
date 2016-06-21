@@ -21,8 +21,8 @@ main = sh $ do
     matchAndLink parsedMap file
   where
     parseOpts = (,) <$> parseDotsPath <*> parseMapPath
-    parseDotsPath = argPath "<dot-files location>" "Path to where the dot files are located"
-    parseMapPath = argPath "<parse-map location>" "Path to where the mapping file is located"
+    parseDotsPath = argPath "<dots-location>" "Path to where the dot files are located"
+    parseMapPath = argPath "<mappings-location>" "Path to where the mapping file is located"
 
     toHashMap = M.fromList . fmap toTups
       where toTups (Entry k v) = (k, v)

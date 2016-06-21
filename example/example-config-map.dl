@@ -1,1 +1,3 @@
-vimrc: $HOME/.vimrc, $HOME/.config/nvim/init.vim
+vimrc: /home/pjrt/.vimrc, /home/pjrt/.config/nvim/init.vim
+zshrc: /home/pjrt/.zshrc
+
