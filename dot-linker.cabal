@@ -18,6 +18,7 @@ library
   exposed-modules:     DotLinker
   build-depends:       base
                      , attoparsec
+                     , bytestring
                      , turtle
                      , text
                      , system-filepath
