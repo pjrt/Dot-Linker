@@ -66,13 +66,31 @@ dirMakeTest =
                               =<< T.testfile expectedFile
 
 envParserTest :: TestTree
-envParserTest =
-  testCase "envParser should parse env variables in paths" $ do
-    let exportedPath = "/home/har"
-    T.export "TESTHOME" (toText' exportedPath)
-    expanedPath <- expandPath "$TESTHOME/.dort/lol"
-    let expectedPath = exportedPath </> ".dort/lol"
-    expanedPath @?= expectedPath
+envParserTest = testGroup "Enviroment Parsing" [midPath, beginning, multi]
+  where
+    midPath =
+      testCase "envParser should parse env variables mid path"
+        $ do let exportedPath = "/home/har"
+             T.export "TEST_HOME" (toText' exportedPath)
+             expanedPath <- expandPath "/root/$TEST_HOME/.dort/lol"
+             let expectedPath = "/root" </> exportedPath </> ".dort/lol"
+             expanedPath @?= expectedPath
+    beginning =
+      testCase "envParser should parse env variables at the beginning"
+        $ do let exportedPath = "/home/har"
+             T.export "TEST_HOME" (toText' exportedPath)
+             expanedPath <- expandPath "$TEST_HOME/.dort/lol"
+             let expectedPath = exportedPath </> ".dort/lol"
+             expanedPath @?= expectedPath
+    multi =
+      testCase "envParser should parse env multiple variables"
+        $ do let exportedPath1 = "/home/har"
+                 exportedPath2 = "hor/"
+             T.export "TEST_HOME" (toText' exportedPath1)
+             T.export "TEST_dir" (toText' exportedPath2)
+             expanedPath <- expandPath "$TEST_HOME/.dort/$TEST_dir/har"
+             let expectedPath = exportedPath1 </> ".dort" </> exportedPath2 </> "har"
+             expanedPath @?= expectedPath
 
 toText' :: T.FilePath -> T.Text
 toText' = either id id . T.toText
