@@ -3,48 +3,26 @@ module DotLinker
 ( lineMapParser
 , fileMapParser
 , matchAndLink
-, Entry(..)
+, expandPath
+, Entry
 ) where
 
 import Control.Applicative
 import Control.Monad (forM_)
 import Data.Attoparsec.ByteString.Char8
-import Data.ByteString (ByteString)
 import qualified Data.HashMap.Strict as M
 import Data.List (foldl')
 import Data.Text (Text, pack, unpack)
 import Data.Text.Encoding (decodeUtf8)
-import Filesystem.Path.CurrentOS (FilePath, decode, encode)
+import Filesystem.Path.CurrentOS (FilePath, encode)
 import System.Posix.Files (createSymbolicLink)
 import Prelude hiding (takeWhile, FilePath)
 import Turtle ((</>), (<>), MonadIO, fromText, toText, liftIO)
 import qualified Turtle as T
 
+import DotLinker.Parsers
+
 type MappedDots = M.HashMap Text [FilePath]
-
-data Entry = Entry Text [FilePath]
-  deriving (Eq, Show)
-
--- | Parser for a single line in the file
---
--- Example:
---
--- vimrc: /home/rar/.vimrc,/home/rar/.config/nvim/init.vim
-lineMapParser :: Parser Entry
-lineMapParser = do
-    src <- dotName <* char ':'
-    ts <- filePath `sepBy1` char ','
-    return $ Entry (decodeUtf8 src) ts
-  where
-    dotName = takeTill (== ':')
-    filePath =
-      strip $ decode <$> takeTill (inClass ",\n\r")
-
-    strip str = many' space *> str <* many' space
-
--- | Parser for a whole file
-fileMapParser :: Parser [Entry]
-fileMapParser = lineMapParser `manyTill` endOfInput
 
 -- | Given a map of dot files to their location and a dot file, make a symbolic
 -- link for the given dotfile IFF a mapping is found.
@@ -70,13 +48,8 @@ matchAndLink mapped dotfile = do
       where
         ensurePathExist = T.mktree . T.directory
 
--- | Create a symbolic link (ln -s)
-lns :: MonadIO io => FilePath -> FilePath -> io ()
-lns src target = liftIO $ createSymbolicLink (toText' src) (toText' target)
-  where toText' = unpack . asText
-
 -- | Expand any enviroment variables found in the path
-expandPath :: FilePath -> T.Shell FilePath
+expandPath :: MonadIO io => FilePath -> io FilePath
 expandPath path = do
     parts <- either (T.die . pack) concatParts $ parseOnly envParser (encode path)
     return $ foldl' (\a x -> a </> fromText x) "/" parts
@@ -88,23 +61,10 @@ expandPath path = do
           let dieMsg = "Enviroment " <> e <> " not set"
           in maybe (T.die $ decodeUtf8 dieMsg) return =<< T.need (decodeUtf8 e)
 
-data EnvOrLit = Env ByteString -- ^ Represents an enviroment variable
-              | Lit ByteString -- ^ A literal path part
-
--- | Parser that parses a path with variables into parts
---
--- Example: $HOME/.dotfiles -> [Env HOME, Lit .dotfiles]
---
--- This will later be used by @expandPath@ to create:
---
--- [Env Home, Lit .dotfiles] -> /home/me/.dotfiles
-envParser :: Parser [EnvOrLit]
-envParser = secParser `sepBy1` char '/'
-  where
-    secParser =
-      let env = char '$' *> takeWhile (inClass "a-zA-Z_") <?> "env variable"
-          lit = takeTill (== '/') <?> "literal path part"
-      in  (Env <$> env) <|> (Lit <$> lit)
+-- | Create a symbolic link (ln -s)
+lns :: MonadIO io => FilePath -> FilePath -> io ()
+lns src target = liftIO $ createSymbolicLink (toText' src) (toText' target)
+  where toText' = unpack . asText
 
 -- Utils ----------------------------------------------------------------------
 -- TODO:pjrt this is lazy and probably wrong

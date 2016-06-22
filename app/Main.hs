@@ -15,13 +15,13 @@ main = sh $ do
     mapFile <- liftIO $ encodeUtf8 <$> readTextFile mapFileLoc
     let entriesE = toHashMap <$> parseOnly fileMapParser mapFile
     parsedMap <- either (die . pack) return entriesE
+    expandedMap <- traverse (sequenceA . map expandPath) parsedMap
     cd dots
     file <- filename <$> ls "./"
-    matchAndLink parsedMap file
+    matchAndLink expandedMap file
   where
     parseOpts = (,) <$> parseDotsPath <*> parseMapPath
     parseDotsPath = argPath "<dots-location>" "Path to where the dot files are located"
     parseMapPath = argPath "<mappings-location>" "Path to where the mapping file is located"
 
-    toHashMap = M.fromList . fmap toTups
-      where toTups (Entry k v) = (k, v)
+    toHashMap = M.fromList
