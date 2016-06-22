@@ -16,7 +16,9 @@ import Filesystem.Path.CurrentOS (FilePath, decode)
 import System.Posix.Files (createSymbolicLink)
 import Prelude hiding (takeWhile, FilePath)
 import Turtle ((<>), MonadIO, toText, liftIO)
-import Turtle.Prelude
+import qualified Turtle as T
+
+type MappedDots = M.HashMap Text [FilePath]
 
 data Entry = Entry Text [FilePath]
   deriving (Eq, Show)
@@ -42,8 +44,6 @@ lineMapParser = do
 fileMapParser :: Parser [Entry]
 fileMapParser = lineMapParser `manyTill` endOfInput
 
-type MappedDots = M.HashMap Text [FilePath]
-
 -- | Given a map of dot files to their location and a dot file, make a symbolic
 -- link for the given dotfile IFF a mapping is found.
 --
@@ -51,25 +51,30 @@ type MappedDots = M.HashMap Text [FilePath]
 -- given file, this does nothing.
 matchAndLink :: MonadIO io => MappedDots -> FilePath -> io ()
 matchAndLink mapped dotfile = do
-    let dotfileAsText = asText dotfile
+    let dotfileAsText = asText . T.filename $ dotfile
         targetM = M.lookup dotfileAsText mapped
     maybe (unmatchFile $ asText dotfile) matchedFiles targetM
   where
-    unmatchFile df = echo $ "No match found for dotfile " <> df <> ". Skipping..."
+    unmatchFile df = T.echo $ "No match found for dotfile " <> df <> ". Skipping..."
     matchedFiles targets = forM_ targets $ \target -> do
-      targetExists <- (||) <$> testfile target <*> testdir target
+      targetExists <- (||) <$> T.testfile target <*> T.testdir target
       if targetExists
-        then echo $ asText dotfile <> " already exists. Skipping..."
+        then T.echo $ asText dotfile <> " already exists. Skipping..."
         else do
-          realdotfile <- realpath dotfile
-          echo $ "Linking " <> asText realdotfile <> " -> " <> asText target
+          realdotfile <- T.realpath dotfile
+          ensurePathExist target
+          T.echo $ "Linking " <> asText realdotfile <> " -> " <> asText target
           lns realdotfile target
-
-    -- TODO:pjrt this is lazy and probably wrong
-    asText = either id id . toText
+      where
+        ensurePathExist = T.mktree . T.directory
 
 
 -- | Create a symbolic link (ln -s)
 lns :: MonadIO io => FilePath -> FilePath -> io ()
 lns src target = liftIO $ createSymbolicLink (toText' src) (toText' target)
-  where toText' = unpack . either id id . toText
+  where toText' = unpack . asText
+
+
+-- TODO:pjrt this is lazy and probably wrong
+asText :: FilePath -> Text
+asText = either id id . toText

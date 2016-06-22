@@ -1,6 +1,3 @@
-* Make directories if they don't exist
-** If a link is `/root/someDir/.har` and `someDir` doesn't exist, it should be
-   created
 * Make it transactional!
 ** Make the transactional ability optional
 * Extand env variables in mapping

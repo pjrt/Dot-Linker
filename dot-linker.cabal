@@ -52,6 +52,8 @@ test-suite dot-linker-spec
    , tasty
    , tasty-hunit
    , attoparsec
+   , turtle
+   , unordered-containers
 
 source-repository head
   type:     git
