@@ -11,11 +11,11 @@ hackage/stackage/binaries coming soon
 
 ### Usage
 
-Make a mapping file:
+Make a mapping file (can be named anything):
 
 ```
-vimrc: /home/pjrt/.vimrc, /home/pjrt/.config/nvim/init.vim
-zshrc: /home/pjrt/.zshrc
+vimrc: $HOME/.vimrc, $HOME/.config/nvim/init.vim
+zshrc: $HOME/.zshrc
 ```
 
 Assuming all your dotfiles are in one place (in a git repo somewhere?) simply
@@ -24,3 +24,8 @@ call:
 ```bash
 dot-linker /path/to/dot-files /path/to/mapping-file
 ```
+
+The tool will then link every file in your mappings file to all the locations
+specified. If a link already exists, it will be skipped. If a dot file exists
+in your dots directory but is not mentioned in the mappings file, it will also
+be skipped.
