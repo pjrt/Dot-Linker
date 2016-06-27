@@ -21,8 +21,8 @@ main = sh $ do
     matchAndLink (verbose, dryRun) expandedMap file
   where
     parseOpts = (,,,) <$> parseDotsPath <*> parseMapPath <*> parseDry <*> parserVersbosity
-    parseDotsPath = argPath "<dots-location>" "Path to where the dot files are located"
-    parseMapPath = argPath "<mappings-location>" "Path to where the mapping file is located"
+    parseDotsPath = argPath "dots_dir" "Directory where the dot files are located"
+    parseMapPath = argPath "mappings_file" "Path to the mappings file"
     parseDry = switch "dry-run" 'd' "Do not link anything, simply show what would happen"
     parserVersbosity = switch "verbose" 'v' "Increase verbosity"
 
