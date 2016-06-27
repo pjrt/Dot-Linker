@@ -8,7 +8,7 @@ module DotLinker
 ) where
 
 import Control.Applicative
-import Control.Monad (forM_, unless)
+import Control.Monad (forM_, unless, when)
 import Data.Attoparsec.ByteString.Char8
 import qualified Data.HashMap.Strict as M
 import Data.List (foldl')
@@ -31,13 +31,13 @@ type MappedDots = M.HashMap Text [FilePath]
 --
 -- NOTE: If the symbolic link already exists or there is no mapping in for the
 -- given file, this does nothing.
-matchAndLink :: MonadIO io => Bool -> MappedDots -> FilePath -> io ()
-matchAndLink dryRun mapped dotfile = do
+matchAndLink :: (MonadIO io) => (Bool, Bool) -> MappedDots -> FilePath -> io ()
+matchAndLink (v, dryRun) mapped dotfile = do
     let dotfileAsText = asText . T.filename $ dotfile
         targetM = M.lookup dotfileAsText mapped
     maybe (unmatchFile $ asText dotfile) matchedFiles targetM
   where
-    unmatchFile df = T.echo $ "No match found for dotfile " <> df <> ". Skipping..."
+    unmatchFile df = vEcho $ "No match found for dotfile " <> df <> ". Skipping..."
     matchedFiles targets = forM_ targets $ \target -> do
       targetExists <- (||) <$> T.testfile target <*> T.testdir target
       if targetExists
@@ -49,6 +49,8 @@ matchAndLink dryRun mapped dotfile = do
           unless dryRun $ lns realdotfile target
       where
         ensurePathExist = T.mktree . T.directory
+
+    vEcho = when v . T.echo
 
 -- | Expand any enviroment variables found in the path
 expandPath :: MonadIO io => FilePath -> io FilePath

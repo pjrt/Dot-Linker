@@ -66,7 +66,7 @@ dirMakeTest =
   testCase "in `/a/b/c.link`, if `b` doesn't exist, it should be made" $
     T.runManaged $
       do (mappedDots, dotFilePath, expectedFile) <- mkTestDir
-         matchAndLink False mappedDots dotFilePath
+         matchAndLink (False, False) mappedDots dotFilePath
          liftIO $ assertBool (show expectedFile ++ " does not exist")
                               =<< T.testfile expectedFile
 
@@ -75,7 +75,7 @@ dryRunTest =
   testCase "dry run should not link anything" $
     T.runManaged $
       do (mappedDots, dotFilePath, expectedFile) <- mkTestDir
-         matchAndLink True mappedDots dotFilePath
+         matchAndLink (False, True) mappedDots dotFilePath
          liftIO $ assertBool (show expectedFile ++ " does exist") . not
                               =<< T.testfile expectedFile
 
