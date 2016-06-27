@@ -49,20 +49,34 @@ fileparserTest endLineChar =
 ioTests :: TestTree
 ioTests = testGroup "IO tests" [dirMakeTest, envParserTest]
 
+mkTestDir :: T.Managed (M.HashMap T.Text [T.FilePath], T.FilePath, T.FilePath)
+mkTestDir =
+ do parent <- T.pwd
+    testPath <- T.mktempdir parent "test-dir"
+    let dotFile = "something.link"
+        dotFilePath = testPath </> dotFile
+        expectedFile = testPath </> "non-existent-dir" </> "ned" </> dotFile
+        mappedDots = M.fromList [(toText' dotFile, [expectedFile])]
+    T.touch dotFilePath
+    return (mappedDots, dotFilePath, expectedFile)
+
 
 dirMakeTest :: TestTree
 dirMakeTest =
   testCase "in `/a/b/c.link`, if `b` doesn't exist, it should be made" $
     T.runManaged $
-      do parent <- T.pwd
-         testPath <- T.mktempdir parent "test-dir"
-         let dotFile = "something.link"
-             dotFilePath = testPath </> dotFile
-             expectedFile = testPath </> "non-existent-dir" </> "ned" </> dotFile
-             mappedDots = M.fromList [(toText' dotFile, [expectedFile])]
-         T.touch dotFilePath
-         matchAndLink mappedDots dotFilePath
+      do (mappedDots, dotFilePath, expectedFile) <- mkTestDir
+         matchAndLink False mappedDots dotFilePath
          liftIO $ assertBool (show expectedFile ++ " does not exist")
+                              =<< T.testfile expectedFile
+
+dryRunTest :: TestTree
+dryRunTest =
+  testCase "dry run should not link anything" $
+    T.runManaged $
+      do (mappedDots, dotFilePath, expectedFile) <- mkTestDir
+         matchAndLink True mappedDots dotFilePath
+         liftIO $ assertBool (show expectedFile ++ " does exist") . not
                               =<< T.testfile expectedFile
 
 envParserTest :: TestTree
