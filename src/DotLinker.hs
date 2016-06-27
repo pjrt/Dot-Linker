@@ -8,7 +8,7 @@ module DotLinker
 ) where
 
 import Control.Applicative
-import Control.Monad (forM_)
+import Control.Monad (forM_, unless)
 import Data.Attoparsec.ByteString.Char8
 import qualified Data.HashMap.Strict as M
 import Data.List (foldl')
@@ -27,10 +27,12 @@ type MappedDots = M.HashMap Text [FilePath]
 -- | Given a map of dot files to their location and a dot file, make a symbolic
 -- link for the given dotfile IFF a mapping is found.
 --
+-- If the dry run flag is passed, it won't link anything
+--
 -- NOTE: If the symbolic link already exists or there is no mapping in for the
 -- given file, this does nothing.
-matchAndLink :: MonadIO io => MappedDots -> FilePath -> io ()
-matchAndLink mapped dotfile = do
+matchAndLink :: MonadIO io => Bool -> MappedDots -> FilePath -> io ()
+matchAndLink dryRun mapped dotfile = do
     let dotfileAsText = asText . T.filename $ dotfile
         targetM = M.lookup dotfileAsText mapped
     maybe (unmatchFile $ asText dotfile) matchedFiles targetM
@@ -44,22 +46,20 @@ matchAndLink mapped dotfile = do
           realdotfile <- T.realpath dotfile
           ensurePathExist target
           T.echo $ "Linking " <> asText realdotfile <> " -> " <> asText target
-          lns realdotfile target
+          unless dryRun $ lns realdotfile target
       where
         ensurePathExist = T.mktree . T.directory
 
 -- | Expand any enviroment variables found in the path
 expandPath :: MonadIO io => FilePath -> io FilePath
 expandPath path = do
-    parts <- either (T.die . pack) concatParts $ parseOnly envParser (encode path)
+    parts <- either (T.die . pack) (traverse expand) $ parseOnly envParser (encode path)
     return $ foldl' (\a x -> a </> fromText x) "/" parts
   where
-    concatParts = traverse expand
-      where
-        expand (Lit p) = return $ decodeUtf8 p
-        expand (Env e) =
-          let dieMsg = "Enviroment " <> e <> " not set"
-          in maybe (T.die $ decodeUtf8 dieMsg) return =<< T.need (decodeUtf8 e)
+    expand (Lit p) = return $ decodeUtf8 p
+    expand (Env e) =
+      let dieMsg = decodeUtf8 $ "Enviroment " <> e <> " not set"
+      in maybe (T.die dieMsg) return =<< T.need (decodeUtf8 e)
 
 -- | Create a symbolic link (ln -s)
 lns :: MonadIO io => FilePath -> FilePath -> io ()

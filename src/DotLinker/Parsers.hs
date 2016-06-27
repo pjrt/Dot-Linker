@@ -26,7 +26,7 @@ lineMapParser :: Parser Entry
 lineMapParser = do
     src <- dotName <* char ':'
     ts <- filePath `sepBy1` char ','
-    return $ (decodeUtf8 src, ts)
+    return (decodeUtf8 src, ts)
   where
     dotName = takeTill (== ':')
     filePath =

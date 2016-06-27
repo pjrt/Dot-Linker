@@ -11,17 +11,18 @@ import Prelude hiding (FilePath)
 
 main :: IO ()
 main = sh $ do
-    (dots, mapFileLoc) <- options "dot-linker" parseOpts
+    (dots, mapFileLoc, dryRun) <- options "dot-linker" parseOpts
     mapFile <- liftIO $ encodeUtf8 <$> readTextFile mapFileLoc
     let entriesE = toHashMap <$> parseOnly fileMapParser mapFile
     parsedMap <- either (die . pack) return entriesE
     expandedMap <- traverse (sequenceA . map expandPath) parsedMap
     cd dots
     file <- filename <$> ls "./"
-    matchAndLink expandedMap file
+    matchAndLink dryRun expandedMap file
   where
-    parseOpts = (,) <$> parseDotsPath <*> parseMapPath
+    parseOpts = (,,) <$> parseDotsPath <*> parseMapPath <*> parseDry
     parseDotsPath = argPath "<dots-location>" "Path to where the dot files are located"
     parseMapPath = argPath "<mappings-location>" "Path to where the mapping file is located"
+    parseDry = switch "dry-run" 'd' "Do not link anything, simply show what would happen"
 
     toHashMap = M.fromList
