@@ -19,6 +19,7 @@ main = sh $ do
     cd dots
     file <- filename <$> ls "./"
     matchAndLink (verbose, dryRun) expandedMap file
+    exit ExitSuccess
   where
     parseOpts = (,,,) <$> parseDotsPath <*> parseMapPath <*> parseDry <*> parserVersbosity
     parseDotsPath = argPath "<dots-location>" "Path to where the dot files are located"

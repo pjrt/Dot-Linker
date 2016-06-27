@@ -41,7 +41,7 @@ matchAndLink (v, dryRun) mapped dotfile = do
     matchedFiles targets = forM_ targets $ \target -> do
       targetExists <- (||) <$> T.testfile target <*> T.testdir target
       if targetExists
-        then T.echo $ asText dotfile <> " already exists. Skipping..."
+        then vEcho $ asText dotfile <> " already exists. Skipping..."
         else do
           realdotfile <- T.realpath dotfile
           ensurePathExist target
