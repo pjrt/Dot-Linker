@@ -51,15 +51,13 @@ matchAndLink mapped dotfile = do
 -- | Expand any enviroment variables found in the path
 expandPath :: MonadIO io => FilePath -> io FilePath
 expandPath path = do
-    parts <- either (T.die . pack) concatParts $ parseOnly envParser (encode path)
+    parts <- either (T.die . pack) (traverse expand) $ parseOnly envParser (encode path)
     return $ foldl' (\a x -> a </> fromText x) "/" parts
   where
-    concatParts = traverse expand
-      where
-        expand (Lit p) = return $ decodeUtf8 p
-        expand (Env e) =
-          let dieMsg = "Enviroment " <> e <> " not set"
-          in maybe (T.die $ decodeUtf8 dieMsg) return =<< T.need (decodeUtf8 e)
+    expand (Lit p) = return $ decodeUtf8 p
+    expand (Env e) =
+      let dieMsg = decodeUtf8 $ "Enviroment " <> e <> " not set"
+      in maybe (T.die dieMsg) return =<< T.need (decodeUtf8 e)
 
 -- | Create a symbolic link (ln -s)
 lns :: MonadIO io => FilePath -> FilePath -> io ()
