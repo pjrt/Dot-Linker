@@ -10,6 +10,7 @@ module DotLinker.Parsers
 import Control.Applicative
 import Data.Attoparsec.ByteString.Char8
 import Data.ByteString (ByteString)
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
 import Filesystem.Path.CurrentOS (FilePath, decode)
@@ -36,8 +37,11 @@ lineMapParser = do
 
 -- | Parser for a whole file
 fileMapParser :: Parser [Entry]
-fileMapParser = lineMapParser `manyTill` endOfInput
-
+fileMapParser = catMaybes <$> optLineMapParser `manyTill` endOfInput
+  where
+    optLineMapParser = (string "-- " *> skip1 lineMapParser *> return Nothing) <|> (Just <$> lineMapParser)
+    skip1 p = sc
+      where sc = (p *> pure ()) <|> pure ()
 
 data EnvOrLit = Env ByteString -- ^ Represents an enviroment variable
               | Lit ByteString -- ^ A literal path part

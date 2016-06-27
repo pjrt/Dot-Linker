@@ -16,7 +16,7 @@ main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "file parser"
-          [ lineparserTest, fileparserTests, ioTests]
+          [ lineparserTest, commentedLineTest, fileparserTests, ioTests]
 entry :: a -> b -> (a, b)
 entry = (,)
 
@@ -25,6 +25,19 @@ lineparserTest =
   testCase "should parse a line fine" $
     let x = parseOnly lineMapParser "vim_rc:  /root/har/.vimrc, /root/har/.config/nvim/init.vim"
         expected = Right $ entry "vim_rc" ["/root/har/.vimrc", "/root/har/.config/nvim/init.vim"]
+    in x @?= expected
+
+commentedLineTest :: TestTree
+commentedLineTest =
+  testCase "should not parse a commented line" $
+    let x = parseOnly fileMapParser
+              $ "vimrc:  /root/har/.vimrc, /root/har/.config/nvim/init.vim\n" <>
+                "-- ctags: /root/har/.ctags\n" <>
+                "zshrc: /root/har/.zshrc\n"
+        expected = Right
+                     [ entry "vimrc" ["/root/har/.vimrc", "/root/har/.config/nvim/init.vim"]
+                     , entry "zshrc" ["/root/har/.zshrc"]
+                     ]
     in x @?= expected
 
 
