@@ -8,7 +8,7 @@ license-file:        LICENSE
 author:              Pedro Rodriguez Tavarez
 maintainer:          pedro@pjrt.co
 copyright:           2016 Pedro Rodriguez Tavarez
-category:            Web
+category:            Util
 build-type:          Simple
 -- extra-source-files:
 cabal-version:       >=1.10
