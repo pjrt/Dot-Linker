@@ -17,7 +17,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Filesystem.Path.CurrentOS (FilePath, encode)
 import System.Posix.Files (createSymbolicLink)
 import Prelude hiding (takeWhile, FilePath)
-import Turtle ((</>), (<>), MonadIO, fromText, toText, liftIO)
+import Turtle ((</>), (<>), (%), MonadIO, fromText, toText, liftIO)
 import qualified Turtle as T
 
 import DotLinker.Parsers
@@ -45,12 +45,13 @@ matchAndLink (v, dryRun) mapped dotfile = do
         else do
           realdotfile <- T.realpath dotfile
           ensurePathExist target
-          T.echo $ "Linking " <> asText realdotfile <> " -> " <> asText target
+          echoT $ "Linking " <> asText realdotfile <> " -> " <> asText target
           unless dryRun $ lns realdotfile target
       where
         ensurePathExist = T.mktree . T.directory
 
-    vEcho = when v . T.echo
+    vEcho = when v . echoT
+    echoT = T.printf (T.s % "\n")
 
 -- | Expand any enviroment variables found in the path
 expandPath :: MonadIO io => FilePath -> io FilePath
